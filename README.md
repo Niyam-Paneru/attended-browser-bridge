@@ -37,4 +37,6 @@ So this repo keeps separate concepts for:
 
 The repo intentionally contains **no browser driver**. Chrome transport, local grant handling, Kaggle-specific controls, and recovery logic stay in the private system.
 
+Want the uncomfortable edge cases? Read the [invariants](docs/invariants.md), [failure modes](docs/failure-modes.md), [write-state table](docs/write-state-table.md), and [timeout walkthrough](docs/walkthrough.md).
+
 > “Maybe it clicked” is a state. It is not permission to click harder.
