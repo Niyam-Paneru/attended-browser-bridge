@@ -1,0 +1,18 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5
+
+jobs:
+  test:
+    executor: node/default
+    steps:
+      - checkout
+      - run:
+          name: Run bridge policy tests
+          command: npm test
+
+workflows:
+  verify:
+    jobs:
+      - test
