@@ -21,6 +21,8 @@ jobs:
           name: Verify public proof structure
           command: |
             test -s docs/workflow.svg
+            test -s docs/overview.md
+            test -s docs/decisions.md
             test -s docs/invariants.md
             test -s docs/failure-modes.md
             test -s SECURITY.md
