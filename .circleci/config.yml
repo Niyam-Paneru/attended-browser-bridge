@@ -18,8 +18,12 @@ jobs:
           name: Run behavior tests
           command: npm test
       - run:
-          name: Verify public workflow visual
-          command: test -s docs/workflow.svg
+          name: Verify public proof structure
+          command: |
+            test -s docs/workflow.svg
+            test -s docs/invariants.md
+            test -s docs/failure-modes.md
+            test -s SECURITY.md
 
 workflows:
   public-proof:
