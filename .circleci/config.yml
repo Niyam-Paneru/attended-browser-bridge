@@ -4,15 +4,24 @@ orbs:
   node: circleci/node@5
 
 jobs:
-  test:
+  verify:
     executor: node/default
     steps:
       - checkout
       - run:
-          name: Run bridge policy tests
+          name: Syntax-check source
+          command: |
+            for file in src/*.js; do
+              node --check "$file"
+            done
+      - run:
+          name: Run behavior tests
           command: npm test
+      - run:
+          name: Verify public workflow visual
+          command: test -s docs/workflow.svg
 
 workflows:
-  verify:
+  public-proof:
     jobs:
-      - test
+      - verify
