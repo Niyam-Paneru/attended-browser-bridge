@@ -1,6 +1,7 @@
 import { fingerprint } from "./canonical.js";
 import { EffectLedger } from "./ledger.js";
 import { authorize } from "./policy.js";
+import { assertFreshSnapshot } from "./snapshot.js";
 
 export class BrowserBridge {
   constructor({ ledger = new EffectLedger() } = {}) {
@@ -10,6 +11,21 @@ export class BrowserBridge {
   prepare(request) {
     const policy = authorize(request);
     if (!policy.allowed) return { ok: false, stage: "policy", reason: policy.reason };
+
+    try {
+      assertFreshSnapshot(request.snapshot, {
+        origin: request.origin,
+        minRevision: request.minRevision ?? 0,
+        now: request.now ?? Date.now(),
+        maxAgeMs: request.maxSnapshotAgeMs ?? 30_000,
+      });
+    } catch (error) {
+      return {
+        ok: false,
+        stage: "snapshot",
+        reason: error instanceof Error ? error.message : "snapshot_invalid",
+      };
+    }
 
     const effect = fingerprint({
       origin: request.origin,
@@ -23,7 +39,12 @@ export class BrowserBridge {
       return { ok: true, stage: "already_committed", fingerprint: effect };
     }
     if (status === "ambiguous") {
-      return { ok: false, stage: "ambiguous", reason: "manual_verification_required", fingerprint: effect };
+      return {
+        ok: false,
+        stage: "ambiguous",
+        reason: "manual_verification_required",
+        fingerprint: effect,
+      };
     }
 
     this.ledger.recordIntent(effect);
@@ -31,6 +52,7 @@ export class BrowserBridge {
       ok: true,
       stage: "ready_for_single_write",
       fingerprint: effect,
+      snapshotDigest: request.snapshot.digest,
       preview: {
         origin: request.origin,
         action: request.action,
@@ -40,8 +62,8 @@ export class BrowserBridge {
     };
   }
 
-  commit(fingerprint) {
-    this.ledger.recordCommit(fingerprint);
-    return { ok: true, stage: "committed", fingerprint };
+  commit(effectFingerprint) {
+    this.ledger.recordCommit(effectFingerprint);
+    return { ok: true, stage: "committed", fingerprint: effectFingerprint };
   }
 }
