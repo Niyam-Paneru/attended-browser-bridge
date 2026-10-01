@@ -8,5 +8,14 @@
   },
   "scripts": {
     "test": "node --test"
-  }
+  },
+  "license": "MIT",
+  "description": "Policy and effect-state core for attended browser writes: fresh snapshots, expiring grants, and no blind replay.",
+  "keywords": [
+    "browser-automation",
+    "human-in-the-loop",
+    "idempotency",
+    "policy",
+    "safety"
+  ]
 }
