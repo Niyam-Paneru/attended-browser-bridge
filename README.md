@@ -40,3 +40,12 @@ The repo intentionally contains **no browser driver**. Chrome transport, local g
 Want the uncomfortable edge cases? Read the [invariants](docs/invariants.md), [failure modes](docs/failure-modes.md), [write-state table](docs/write-state-table.md), and [timeout walkthrough](docs/walkthrough.md).
 
 > “Maybe it clicked” is a state. It is not permission to click harder.
+
+## Inspect deeper
+
+- [Design overview](docs/overview.md)
+- [Why the design looks this way](docs/decisions.md)
+- [How it fails on purpose](docs/failure-modes.md)
+- [Security / privacy boundary](SECURITY.md)
+
+The README is the front door. The interesting arguments are in those files.
