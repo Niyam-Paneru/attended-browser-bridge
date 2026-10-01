@@ -2,67 +2,39 @@
 
 **Browser automation, but with trust issues. Healthy trust issues.**
 
-This repo is a sanitized public slice of the policy core behind my private Browser Bridge work. It is built around one uncomfortable fact: after a browser write, *“I am not sure what happened”* is not permission to try again.
+This is the public control-core slice of my private Browser Bridge work.
 
-## The loop
+The private project can operate an attended browser. This repo focuses on the part I care about most: deciding whether a write should happen at all, and what to do when the result is uncertain.
 
-```mermaid
-flowchart LR
-    A[Request] --> B[Fresh snapshot]
-    B --> C{Grant valid?}
-    C -- no --> X[STOP]
-    C -- yes --> D[Preview exact action]
-    D --> E[Record effect intent]
-    E --> F[Perform one write]
-    F --> G[Fresh readback]
-    G --> H{Effect verified?}
-    H -- yes --> I[Commit effect]
-    H -- no --> J[AMBIGUOUS]
-    J --> X
-```
+![Single-write workflow](docs/workflow.svg)
 
-No “maybe it clicked, let's click again.” That sentence has caused enough software archaeology already.
+## The rule that ruins many “smart” automations
 
-## What this proves
+**If the write may already have happened, do not automatically do it again.**
 
-- expiring action grants;
-- exact origin/action allowlists;
-- canonical request fingerprints;
-- append-only effect ledger;
-- idempotent replay for completed effects;
-- **no automatic replay** after an unresolved effect intent;
-- deterministic deny reasons.
+That sounds obvious until a timeout lands between “click” and “response.”
 
-## Run
+So this repo keeps separate concepts for:
 
-```bash
-npm test
-```
+- expiring permission grants;
+- canonical request identity;
+- fresh browser snapshots;
+- effect intent;
+- committed effects;
+- ambiguous effects.
 
-## Example
+## Repo map
 
-```js
-import { BrowserBridge } from "./src/bridge.js";
+| Area | Job |
+|---|---|
+| `policy.js` | origin/action/expiry authorization |
+| `canonical.js` | stable request fingerprints |
+| `snapshot.js` | freshness + revision checks |
+| `ledger.js` | effect intent and commit history |
+| `bridge.js` | compose the decision flow |
+| `test/` | policy, ledger, snapshot, and integration behavior |
+| `docs/` | why the rules exist |
 
-const bridge = new BrowserBridge();
-const result = bridge.prepare({
-  origin: "https://example.test",
-  action: "click",
-  target: "#save",
-  grant: {
-    expiresAt: Date.now() + 60_000,
-    origins: ["https://example.test"],
-    actions: ["click"]
-  }
-});
+The repo intentionally contains **no browser driver**. Chrome transport, local grant handling, Kaggle-specific controls, and recovery logic stay in the private system.
 
-console.log(result);
-```
-
-## Boundary
-
-This package does not connect to Chrome, sign into websites, bypass CAPTCHAs, send messages, buy things, or control a real browser. It exposes the decision/ledger behavior that real browser control should sit behind.
-
-## Provenance
-
-Rewritten and sanitized from the private `browser-bridge` project, which has a larger attended Chrome/Kaggle transport and stricter local execution boundary.
+> “Maybe it clicked” is a state. It is not permission to click harder.
