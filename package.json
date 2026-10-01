@@ -17,5 +17,10 @@
     "idempotency",
     "policy",
     "safety"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Niyam-Paneru/attended-browser-bridge.git"
+  },
+  "homepage": "https://github.com/Niyam-Paneru/attended-browser-bridge#readme"
 }
