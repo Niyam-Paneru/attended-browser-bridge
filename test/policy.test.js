@@ -27,3 +27,11 @@ test("expired grant is denied", () => {
     "grant_expired"
   );
 });
+
+for (const now of [NaN, Infinity, -Infinity]) {
+  test(`invalid clock ${now} cannot authorize a write`, () => {
+    const result = authorize({ origin: "https://example.test", action: "click", grant: grant(), now });
+    assert.equal(result.allowed, false);
+    assert.equal(result.reason, "invalid_clock");
+  });
+}
