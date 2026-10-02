@@ -1,33 +1,112 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="t d">
-<title id="t">Attended browser write boundary</title><desc id="d">A browser write passes explicit permission, a fresh snapshot, and an effect-intent boundary before one write; ambiguous readback exits to stop.</desc>
-<rect width="1200" height="520" fill="#f5f5f1"/>
-<text x="56" y="62" fill="#71716a" font-family="Arial,sans-serif" font-size="13" letter-spacing="3">ATTENDED BROWSER BRIDGE</text>
-<text x="56" y="105" fill="#171714" font-family="Georgia,serif" font-size="34">One write. Then read. No panic double-clicking.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 760" role="img" aria-labelledby="title desc">
+  <title id="title">Effect-state write sequence for the attended browser bridge public control core</title>
+  <desc id="desc">Authorization and snapshot freshness gate a canonical effect. New effects record intent before one external write attempt. Existing ambiguous effects stop, existing committed effects return without writing. Verified readback commits; unverified readback leaves the intent ambiguous and blocks replay.</desc>
 
-<rect x="58" y="170" width="190" height="100" rx="14" fill="#fff" stroke="#171714" stroke-width="2"/>
-<text x="80" y="202" fill="#71716a" font-family="Arial,sans-serif" font-size="12" letter-spacing="2">REQUEST</text>
-<text x="80" y="234" fill="#171714" font-family="Arial,sans-serif" font-size="20" font-weight="700">action + target</text>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,4 L0,8 z" fill="#20252b"/>
+    </marker>
+    <style>
+      .bg{fill:#fbfbf8}.ink{fill:#15191e}.muted{fill:#5e6670}
+      .line{stroke:#20252b;stroke-width:2;fill:none;marker-end:url(#arrow)}
+      .branch{stroke:#8c949c;stroke-width:1.5;fill:none;marker-end:url(#arrow)}
+      .guard{fill:#fff;stroke:#20252b;stroke-width:1.6}
+      .status{fill:#eef4fb;stroke:#355f8a;stroke-width:1.7}
+      .amb{fill:#fff3e6;stroke:#9b5b16;stroke-width:1.8}
+      .commit{fill:#edf6ee;stroke:#3f7046;stroke-width:1.8}
+      .stop{fill:#f8eeee;stroke:#8e3f46;stroke-width:1.6}
+      .external{fill:#f5f3f8;stroke:#6b5a78;stroke-width:1.6;stroke-dasharray:6 5}
+      text{font-family:Arial,Helvetica,sans-serif}.k{font-size:12px;letter-spacing:2px;font-weight:700}
+      .h{font-size:31px;font-weight:700}.l{font-size:15px;font-weight:700}.b{font-size:13px}.s{font-size:11px}
+      .c{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+    </style>
+  </defs>
 
-<rect x="320" y="135" width="245" height="170" rx="16" fill="#fff" stroke="#171714" stroke-width="2"/>
-<text x="345" y="168" fill="#71716a" font-family="Arial,sans-serif" font-size="12" letter-spacing="2">BEFORE WRITE</text>
-<text x="345" y="201" fill="#171714" font-family="Georgia,serif" font-size="24">Can this be attempted?</text>
-<text x="345" y="240" fill="#4e4e48" font-family="Arial,sans-serif" font-size="14">grant still valid</text>
-<text x="345" y="266" fill="#4e4e48" font-family="Arial,sans-serif" font-size="14">snapshot still fresh</text>
+  <rect class="bg" width="1320" height="760"/>
+  <text class="k muted" x="60" y="48">PUBLIC CONTROL CORE · EFFECT-STATE WRITE SEQUENCE</text>
+  <text class="h ink" x="60" y="88">Record intent before the write; uncertainty blocks replay.</text>
+  <text class="b muted" x="60" y="116">Solid nodes are implemented here. The dashed browser-driver node marks the transport/readback boundary intentionally omitted from this repository.</text>
 
-<rect x="640" y="135" width="220" height="170" rx="16" fill="#fff" stroke="#171714" stroke-width="2"/>
-<text x="665" y="168" fill="#71716a" font-family="Arial,sans-serif" font-size="12" letter-spacing="2">EFFECT LEDGER</text>
-<text x="665" y="201" fill="#171714" font-family="Georgia,serif" font-size="24">One intent.</text>
-<text x="665" y="240" fill="#4e4e48" font-family="Arial,sans-serif" font-size="14">new → write once</text>
-<text x="665" y="266" fill="#a4243b" font-family="Arial,sans-serif" font-size="14">ambiguous → stop</text>
+  <text class="k muted" x="60" y="160">PRE-WRITE CONTROL CORE</text>
 
-<rect x="935" y="170" width="205" height="100" rx="14" fill="#e4edb0" stroke="#596e35" stroke-width="2"/>
-<text x="960" y="202" fill="#596e35" font-family="Arial,sans-serif" font-size="12" letter-spacing="2">AFTER WRITE</text>
-<text x="960" y="234" fill="#171714" font-family="Arial,sans-serif" font-size="20" font-weight="700">read back + commit</text>
+  <rect class="guard" x="60" y="182" width="185" height="92" rx="8"/>
+  <text class="l ink" x="82" y="215">1 · Authorize</text>
+  <text class="c muted" x="82" y="240">authorize(request)</text>
+  <text class="s muted" x="82" y="260">expiry · origin · action</text>
 
-<g stroke="#171714" stroke-width="2" fill="none"><path d="M248 220 H320"/><path d="M565 220 H640"/><path d="M860 220 H935"/></g>
-<g fill="#171714"><path d="M312 214 l10 6 -10 6z"/><path d="M632 214 l10 6 -10 6z"/><path d="M927 214 l10 6 -10 6z"/></g>
+  <path class="line" d="M245 228 H290"/>
+  <text class="s muted" x="254" y="214">allowed</text>
 
-<rect x="320" y="360" width="540" height="74" rx="14" fill="#f1d9dc" stroke="#a4243b" stroke-width="2"/>
-<text x="345" y="390" fill="#a4243b" font-family="Arial,sans-serif" font-size="12" letter-spacing="2">IF THE RESULT IS UNCLEAR</text>
-<text x="345" y="418" fill="#171714" font-family="Georgia,serif" font-size="20">Mark it ambiguous. Stop. Verify manually.</text>
+  <rect class="guard" x="290" y="182" width="205" height="92" rx="8"/>
+  <text class="l ink" x="312" y="215">2 · Fresh snapshot</text>
+  <text class="c muted" x="312" y="240">assertFreshSnapshot()</text>
+  <text class="s muted" x="312" y="260">origin · revision · age · digest</text>
+
+  <path class="line" d="M495 228 H540"/>
+  <text class="s muted" x="505" y="214">fresh</text>
+
+  <rect class="status" x="540" y="174" width="215" height="108" rx="8"/>
+  <text class="l ink" x="562" y="207">3 · Effect state</text>
+  <text class="c muted" x="562" y="232">ledger.status(fp)</text>
+  <text class="s muted" x="562" y="253">new · ambiguous · committed</text>
+  <text class="s muted" x="562" y="270">fingerprint = origin/action/target/value</text>
+
+  <path class="line" d="M755 228 H800"/>
+  <text class="s muted" x="768" y="214">new</text>
+
+  <rect class="amb" x="800" y="182" width="205" height="92" rx="8"/>
+  <text class="l ink" x="822" y="215">4 · Record intent</text>
+  <text class="c muted" x="822" y="240">recordIntent(fp)</text>
+  <text class="s muted" x="822" y="260">intent-only = ambiguous</text>
+
+  <path class="line" d="M1005 228 H1050"/>
+
+  <rect class="guard" x="1050" y="182" width="210" height="92" rx="8"/>
+  <text class="l ink" x="1072" y="215">Ready for one write</text>
+  <text class="c muted" x="1072" y="240">ready_for_single_write</text>
+  <text class="s muted" x="1072" y="260">intent already persisted</text>
+
+  <!-- Denial branches before any intent -->
+  <path class="branch" d="M150 274 V320"/>
+  <text class="s muted" x="160" y="304">denied</text>
+  <path class="branch" d="M392 274 V296 H190 V320"/>
+  <text class="s muted" x="300" y="290">stale / invalid</text>
+  <rect class="stop" x="60" y="320" width="260" height="58" rx="7"/>
+  <text class="l ink" x="82" y="354">STOP · no intent · no write</text>
+
+  <!-- Replay branches resolved at the status check -->
+  <path class="branch" d="M610 282 V330"/>
+  <rect class="commit" x="450" y="330" width="250" height="68" rx="7"/>
+  <text class="l ink" x="472" y="359">committed replay</text>
+  <text class="c muted" x="472" y="382">already_committed · no write</text>
+
+  <path class="branch" d="M685 282 V330 H760"/>
+  <rect class="amb" x="760" y="330" width="285" height="68" rx="7"/>
+  <text class="l ink" x="782" y="359">ambiguous replay</text>
+  <text class="c muted" x="782" y="382">manual_verification_required · no write</text>
+
+  <text class="k muted" x="60" y="466">EXTERNAL ATTENDED DRIVER · NOT INCLUDED HERE</text>
+  <path class="line" d="M1155 274 V488"/>
+  <rect class="external" x="720" y="488" width="540" height="96" rx="9"/>
+  <text class="l ink" x="744" y="520">5 · Attempt once → read back</text>
+  <text class="b muted" x="744" y="545">The browser transport performs the side effect once, then gathers evidence of what happened.</text>
+  <text class="s muted" x="744" y="566">Transport uncertainty never authorizes an automatic second write.</text>
+
+  <text class="k muted" x="60" y="632">POST-WRITE EFFECT STATE</text>
+
+  <path class="line" d="M870 584 V650 H660"/>
+  <text class="s muted" x="760" y="622">verified</text>
+  <rect class="commit" x="430" y="650" width="230" height="76" rx="8"/>
+  <text class="l ink" x="452" y="680">6A · committed</text>
+  <text class="c muted" x="452" y="703">commit(fp)</text>
+  <text class="s muted" x="452" y="720">next replay → already_committed</text>
+
+  <path class="line" d="M1110 584 V650 H1015"/>
+  <text class="s muted" x="1034" y="622">cannot verify</text>
+  <rect class="amb" x="1015" y="650" width="245" height="76" rx="8"/>
+  <text class="l ink" x="1037" y="680">6B · ambiguous</text>
+  <text class="c muted" x="1037" y="703">intent exists · no commit</text>
+  <text class="s muted" x="1037" y="720">next replay → manual verification</text>
+
+  <text class="s muted" x="60" y="746">Code path: policy.js → snapshot.js → bridge.prepare() → ledger.recordIntent() → external one-write/readback boundary → bridge.commit() or unresolved intent.</text>
 </svg>

@@ -1,19 +1,9 @@
 # Provenance
 
-This repository is a deliberately small public slice of my private Browser Bridge control-plane work.
+This is the public control core extracted from private attended-browser work.
 
-## Preserved
+What remains public is the part that can be reviewed without exposing a real browser session: expiring authorization, canonical effect identity, fresh-snapshot checks, intent-before-write, committed effects, and ambiguous-effect replay blocking.
 
-- expiring grants;
-- canonical request identity;
-- fresh snapshot requirements;
-- effect intent/commit states;
-- ambiguous-write blocking.
+The actual browser transport, cookies/session access, local bridge secrets, Kaggle-specific controls, recovery plumbing, and target-site automation are not in this repository.
 
-## Rewritten for public review
-
-There is no real browser driver, cookie/session access, local bridge secret, Kaggle-specific control, or target-site automation in this repository.
-
-## Claim boundary
-
-The code demonstrates how a write can be governed. It does not perform or authorize real browser actions by itself.
+So the code can answer **whether a write is safe to attempt or repeat**. It cannot perform a browser action by itself.
