@@ -1,20 +1,20 @@
 # Attended Browser Bridge
 
-**This repository is the public control core of an attended browser bridge — not the browser driver itself.**
+A browser write should have permission, a fresh view of the page, and a record of what happened. This JavaScript core checks those conditions and blocks replay when an earlier write is committed or uncertain.
 
-It implements the decision boundary around a browser write: authorization, snapshot freshness, canonical effect identity, intent-before-write, and replay behavior when the outcome is known or uncertain.
+**A timeout is not permission to double-click your problems.**
 
-One rule drives the design: after a browser write, “I am not sure what happened” is a reason to stop, not a reason to click again.
+This is a **public sample from my private browser automation work**. It isolates the write-control logic for review; I can build and adapt the surrounding browser workflows and integrations for a project's requirements. The browser driver and session plumbing stay outside this repo.
 
 ## Write / effect sequence
 
 ```mermaid
 sequenceDiagram
     participant Caller
-    participant Core as Public control core
+    participant Core as Control core
     participant Ledger as Effect ledger
-    participant Driver as External browser driver
-    Note right of Driver: outside this public repo
+    participant Driver as Browser driver
+    Note over Driver: external integration
 
     Caller->>Core: prepare(request)
     Core->>Core: authorize()
@@ -23,10 +23,10 @@ sequenceDiagram
 
     alt committed
         Ledger-->>Core: committed
-        Core-->>Caller: already_committed (replay blocked)
+        Core-->>Caller: already_committed<br/>no second write
     else ambiguous
         Ledger-->>Core: ambiguous
-        Core-->>Caller: manual_verification_required (replay blocked)
+        Core-->>Caller: manual_verification_required<br/>no second write
     else new
         Ledger-->>Core: new
         Core->>Ledger: record effect_intent
@@ -39,7 +39,7 @@ sequenceDiagram
             Core->>Ledger: record effect_commit
             Core-->>Caller: committed
         else outcome uncertain
-            Caller-->>Caller: stop; intent remains ambiguous
+            Note over Caller,Ledger: Stop - intent remains ambiguous
         end
     end
 ```
