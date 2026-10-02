@@ -93,6 +93,22 @@ test("stale snapshot blocks before intent is recorded", () => {
   assert.deepEqual(bridge.ledger.entries(), []);
 });
 
+test("invalid clock blocks before intent is recorded", () => {
+  const bridge = new BrowserBridge();
+  const result = bridge.prepare(request({ now: NaN }));
+  assert.equal(result.stage, "policy");
+  assert.equal(result.reason, "invalid_clock");
+  assert.deepEqual(bridge.ledger.entries(), []);
+});
+
+test("unbounded snapshot age blocks before intent is recorded", () => {
+  const bridge = new BrowserBridge();
+  const result = bridge.prepare(request({ maxSnapshotAgeMs: Infinity }));
+  assert.equal(result.stage, "snapshot");
+  assert.equal(result.reason, "invalid_freshness_requirements");
+  assert.deepEqual(bridge.ledger.entries(), []);
+});
+
 test("fresh effect becomes one ready write", () => {
   const bridge = new BrowserBridge();
   const result = bridge.prepare(request());

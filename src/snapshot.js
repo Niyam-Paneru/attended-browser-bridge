@@ -21,6 +21,10 @@ export function assertFreshSnapshot(
     maxAgeMs = 30_000,
   }
 ) {
+  if (!Number.isFinite(now) || !Number.isFinite(maxAgeMs) || maxAgeMs < 0 ||
+      !Number.isInteger(minRevision) || minRevision < 0) {
+    throw new Error("invalid_freshness_requirements");
+  }
   if (!ticket) throw new Error("snapshot_required");
   if (!Number.isInteger(ticket.revision) || ticket.revision < 0 || !Number.isFinite(ticket.observedAt)) {
     throw new Error("invalid_snapshot");

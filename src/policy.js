@@ -3,6 +3,10 @@ export function authorize({ origin, action, grant, now = Date.now() }) {
     return { allowed: false, reason: "missing_grant" };
   }
 
+  if (!Number.isFinite(now)) {
+    return { allowed: false, reason: "invalid_clock" };
+  }
+
   if (!Number.isFinite(grant.expiresAt) || grant.expiresAt <= now) {
     return { allowed: false, reason: "grant_expired" };
   }
