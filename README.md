@@ -1,33 +1,65 @@
 # Attended Browser Bridge
 
-**This repository is the public control core of an attended browser bridge — not the full browser driver.**
+**This repository is the public control core of an attended browser bridge — not the browser driver itself.**
 
-It implements the decision boundary around a browser write: authorization, snapshot freshness, canonical effect identity, intent-before-write, and replay behavior when the outcome is known or uncertain. Browser transport, session access, site-specific controls, and readback plumbing are intentionally absent.
+It implements the decision boundary around a browser write: authorization, snapshot freshness, canonical effect identity, intent-before-write, and replay behavior when the outcome is known or uncertain.
 
-```bash
-npm test
+One rule drives the design: after a browser write, “I am not sure what happened” is a reason to stop, not a reason to click again.
+
+## Write / effect sequence
+
+```mermaid
+sequenceDiagram
+    participant Caller
+    participant Core as Public control core
+    participant Ledger as Effect ledger
+    participant Driver as External browser driver
+    Note right of Driver: outside this public repo
+
+    Caller->>Core: prepare(request)
+    Core->>Core: authorize()
+    Core->>Core: assertFreshSnapshot()
+    Core->>Ledger: status(fingerprint)
+
+    alt committed
+        Ledger-->>Core: committed
+        Core-->>Caller: already_committed (replay blocked)
+    else ambiguous
+        Ledger-->>Core: ambiguous
+        Core-->>Caller: manual_verification_required (replay blocked)
+    else new
+        Ledger-->>Core: new
+        Core->>Ledger: record effect_intent
+        Core-->>Caller: ready_for_single_write
+        Caller->>Driver: one external write
+        Driver-->>Caller: fresh readback
+
+        alt effect verified
+            Caller->>Core: commit(fingerprint)
+            Core->>Ledger: record effect_commit
+            Core-->>Caller: committed
+        else outcome uncertain
+            Caller-->>Caller: stop; intent remains ambiguous
+        end
+    end
 ```
-
-![Effect-state write sequence](docs/workflow.svg)
 
 ## The write contract
 
-A write is allowed to reach the external driver only after the public core can prove two preconditions: the grant covers the origin/action and the observed snapshot is fresh.
+A write can reach the external driver only after the public core proves two preconditions: the grant covers the origin/action and the observed snapshot is fresh.
 
-1. `authorize()` checks grant expiry, origin, and action.
-2. `assertFreshSnapshot()` checks origin, revision, age, and digest.
-3. `BrowserBridge.prepare()` fingerprints the effect and asks the ledger for its state.
-4. A **new** effect records `effect_intent` before returning `ready_for_single_write`.
-5. The external driver may attempt that write once and then read back the result. That driver is not included here.
-6. If the caller can verify the effect, it calls `commit(fingerprint)`. If it cannot, it does nothing: the intent-only state remains **ambiguous** and replay is blocked.
+- `authorize()` checks grant expiry, origin, and action.
+- `assertFreshSnapshot()` checks origin, revision, age, and digest.
+- `BrowserBridge.prepare()` fingerprints the logical effect and asks the ledger for its current state.
+- A **new** effect records `effect_intent` before returning `ready_for_single_write`.
+- The external driver may attempt that write once, then read back what happened.
+- Verified readback can be committed. Unverified readback leaves the intent **ambiguous**, so replay stays blocked.
 
 | Ledger state on replay | Core response | Write again? |
 |---|---|---:|
 | `new` | record intent → `ready_for_single_write` | once |
 | `ambiguous` | `manual_verification_required` | no |
 | `committed` | `already_committed` | no |
-
-The important failure mode is the middle row: uncertainty after a side effect is a state to resolve, not permission to repeat the side effect.
 
 ## Inspect the implementation
 
@@ -39,7 +71,7 @@ The important failure mode is the middle row: uncertainty after a side effect is
 | How do `new → ambiguous → committed` states work? | [`src/ledger.js`](src/ledger.js) | [`test/ledger.test.js`](test/ledger.test.js) |
 | Where are the gates composed? | [`src/bridge.js`](src/bridge.js) | [`test/bridge.test.js`](test/bridge.test.js) |
 
-More edge-case detail: [write-state table](docs/write-state-table.md), [invariants](docs/invariants.md), [failure modes](docs/failure-modes.md), and [timeout walkthrough](docs/walkthrough.md).
+More edge-case detail: [write-state table](docs/write-state-table.md), [invariants](docs/invariants.md), [failure modes](docs/failure-modes.md), and [timeout walkthrough](docs/walkthrough.md). Verification commands and expected checks are in [docs/verification.md](docs/verification.md).
 
 ## Scope and provenance
 
