@@ -8,39 +8,68 @@ This is a **public sample from my private browser automation work**. It isolates
 
 ## Write / effect sequence
 
+**Prepare and reserve the effect.**
+
 ```mermaid
+---
+config:
+  sequence:
+    actorMargin: 32
+    messageMargin: 28
+    mirrorActors: false
+    wrap: true
+---
 sequenceDiagram
+    accTitle: Prepare and reserve the browser effect
+    accDescr: Sequence for prepare and reserve the browser effect.
     participant Caller
     participant Core as Control core
     participant Ledger as Effect ledger
-    participant Driver as Browser driver
-    Note over Driver: external integration
-
     Caller->>Core: prepare(request)
     Core->>Core: authorize()
     Core->>Core: assertFreshSnapshot()
     Core->>Ledger: status(fingerprint)
-
-    alt committed
+    alt Already committed
         Ledger-->>Core: committed
-        Core-->>Caller: already_committed<br/>no second write
-    else ambiguous
+        Core-->>Caller: Already committed<br/>No second write
+    else Outcome ambiguous
         Ledger-->>Core: ambiguous
-        Core-->>Caller: manual_verification_required<br/>no second write
-    else new
+        Core-->>Caller: Manual verification required<br/>No second write
+    else New effect
         Ledger-->>Core: new
         Core->>Ledger: record effect_intent
         Core-->>Caller: ready_for_single_write
-        Caller->>Driver: one external write
-        Driver-->>Caller: fresh readback
+    end
+```
 
-        alt effect verified
-            Caller->>Core: commit(fingerprint)
-            Core->>Ledger: record effect_commit
-            Core-->>Caller: committed
-        else outcome uncertain
-            Note over Caller,Ledger: Stop - intent remains ambiguous
-        end
+**Write once, then verify the outcome.**
+
+```mermaid
+---
+config:
+  sequence:
+    actorMargin: 32
+    messageMargin: 28
+    mirrorActors: false
+    wrap: true
+---
+sequenceDiagram
+    accTitle: Write once and verify the browser effect
+    accDescr: Sequence for write once and verify the browser effect.
+    participant Caller
+    participant Core as Control core
+    participant Ledger as Effect ledger
+    participant Driver as Browser driver
+    Note over Driver: External integration
+    Note over Caller,Core: Start only after prepare returns ready_for_single_write
+    Caller->>Driver: One external write
+    Driver-->>Caller: Fresh readback
+    alt Effect verified
+        Caller->>Core: commit(fingerprint)
+        Core->>Ledger: record effect_commit
+        Core-->>Caller: committed
+    else Outcome uncertain
+        Note over Caller,Ledger: Stop - intent remains ambiguous
     end
 ```
 
