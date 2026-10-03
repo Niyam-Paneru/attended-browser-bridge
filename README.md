@@ -14,10 +14,10 @@ This is a **public sample from my private browser automation work**. It isolates
 ---
 config:
   sequence:
-    actorMargin: 32
+    actorMargin: 50
     messageMargin: 28
     mirrorActors: false
-    wrap: true
+    wrap: false
 ---
 sequenceDiagram
     accTitle: Prepare and reserve the browser effect
@@ -48,10 +48,10 @@ sequenceDiagram
 ---
 config:
   sequence:
-    actorMargin: 32
+    actorMargin: 50
     messageMargin: 28
     mirrorActors: false
-    wrap: true
+    wrap: false
 ---
 sequenceDiagram
     accTitle: Write once and verify the browser effect
@@ -61,7 +61,7 @@ sequenceDiagram
     participant Ledger as Effect ledger
     participant Driver as Browser driver
     Note over Driver: External integration
-    Note over Caller,Core: Start only after prepare returns ready_for_single_write
+    Note over Caller,Core: Start only after prepare returns<br/>ready_for_single_write
     Caller->>Driver: One external write
     Driver-->>Caller: Fresh readback
     alt Effect verified
