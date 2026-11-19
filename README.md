@@ -1,10 +1,16 @@
 # Attended Browser Bridge
 
-A browser write should have permission, a fresh view of the page, and a record of what happened. This JavaScript core checks those conditions and blocks replay when an earlier write is committed or uncertain.
+A browser agent clicks Submit. The page hangs. Nobody knows whether it worked. Clicking again might create a duplicate. This JavaScript core checks **permission, snapshot freshness, and a write ledger** before permitting a single external browser write.
 
-**A timeout is not permission to double-click your problems.**
+It treats “not sure” as a real state, not a motivational challenge. Ambiguous attempts are blocked from replay until the effect can be verified.
 
-This is a **public sample from my private browser automation work**. It isolates the write-control logic for review; I can build and adapt the surrounding browser workflows and integrations for a project's requirements. The browser driver and session plumbing stay outside this repo.
+**Try it / check the behavior:**
+
+```bash
+npm test
+```
+
+This repository is the control core, not a Chrome driver or working site automation. [Verification](docs/verification.md).
 
 ## Write / effect sequence
 
