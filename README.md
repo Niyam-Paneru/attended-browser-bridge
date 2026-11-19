@@ -22,13 +22,74 @@ A write goes through these checks:
 
 After the external caller performs the single write, a verified readback can commit it. With no trustworthy readback, the intent stays unresolved. A timeout doesn't magically erase history.
 
-## Try it
+## The two halves of a write
 
-```sh
-npm test
+First, the core checks permission and reserves intent *before* the external action.
+
+```mermaid
+---
+config:
+  sequence:
+    actorMargin: 50
+    messageMargin: 28
+    mirrorActors: false
+    wrap: false
+---
+sequenceDiagram
+    accTitle: Prepare and reserve the browser effect
+    accDescr: Sequence for prepare and reserve the browser effect.
+    participant Caller
+    participant Core as Control core
+    participant Ledger as Effect ledger
+    Caller->>Core: prepare(request)
+    Core->>Core: authorize()
+    Core->>Core: assertFreshSnapshot()
+    Core->>Ledger: status(fingerprint)
+    alt Already committed
+        Ledger-->>Core: committed
+        Core-->>Caller: Already committed<br/>No second write
+    else Outcome ambiguous
+        Ledger-->>Core: ambiguous
+        Core-->>Caller: Manual verification required<br/>No second write
+    else New effect
+        Ledger-->>Core: new
+        Core->>Ledger: record effect_intent
+        Core-->>Caller: ready_for_single_write
+    end
 ```
 
-Node.js 20+. No credentials and no browser session needed.
+Then the caller does a single write and verifies the result before recording success.
+
+```mermaid
+---
+config:
+  sequence:
+    actorMargin: 50
+    messageMargin: 28
+    mirrorActors: false
+    wrap: false
+---
+sequenceDiagram
+    accTitle: Write once and verify the browser effect
+    accDescr: Sequence for write once and verify the browser effect.
+    participant Caller
+    participant Core as Control core
+    participant Ledger as Effect ledger
+    participant Driver as Browser driver
+    Note over Driver: External integration
+    Note over Caller,Core: Start only after prepare returns<br/>ready_for_single_write
+    Caller->>Driver: One external write
+    Driver-->>Caller: Fresh readback
+    alt Effect verified
+        Caller->>Core: commit(fingerprint)
+        Core->>Ledger: record effect_commit
+        Core-->>Caller: committed
+    else Outcome uncertain
+        Note over Caller,Ledger: Stop - intent remains ambiguous
+    end
+```
+
+Node.js 20+, no browser session needed. [Verification steps](docs/verification.md) are kept out of this front page.
 
 If you're reading the source, follow [`src/bridge.js`](src/bridge.js) → [`src/policy.js`](src/policy.js) → [`src/snapshot.js`](src/snapshot.js) → [`src/ledger.js`](src/ledger.js). The tests cover grants, snapshot freshness, effect fingerprints, and replay decisions. There's a more detailed [write-state table](docs/write-state-table.md) and a [timeout walkthrough](docs/walkthrough.md).
 
