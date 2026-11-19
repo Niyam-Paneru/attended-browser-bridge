@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="413" viewBox="0 0 920 413" role="img" aria-labelledby="ttl ds">
+<title id="ttl">Attended browser write lifecycle</title>
+<desc id="ds">Check permission and snapshot freshness, record intent, perform one write, then verify external readback. A confirmed effect is committed; an uncertain effect stops for manual verification and is not retried.</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M1 1 L8 4.5 L1 8" fill="none" stroke="#657789" stroke-width="1.6" stroke-linecap="round"/></marker></defs>
+<rect width="920" height="413" rx="16" fill="#FCFCFA"/>
+<text x="38" y="39" font-family="Arial,Helvetica,sans-serif" font-size="15" font-weight="700" letter-spacing="2" fill="#64748B">ATTENDED BROWSER BRIDGE / ONE WRITE</text>
+<text x="38" y="87" font-family="Arial,Helvetica,sans-serif" font-size="32" font-weight="700" fill="#17242F">Don't double-click your uncertainty.</text>
+<text x="38" y="115" font-family="Arial,Helvetica,sans-serif" font-size="17" fill="#475569">A timeout cannot tell you whether Submit already worked.</text>
+<rect x="38" y="156" width="192" height="76" rx="9" fill="#EAEFF3" stroke="#BCCAD5"/>
+<rect x="271" y="156" width="172" height="76" rx="9" fill="#EAEFF3" stroke="#BCCAD5"/>
+<rect x="485" y="156" width="165" height="76" rx="9" fill="#EAEFF3" stroke="#BCCAD5"/>
+<rect x="690" y="156" width="192" height="76" rx="9" fill="#EAEFF3" stroke="#BCCAD5"/>
+<g font-family="Arial,Helvetica,sans-serif" text-anchor="middle" fill="#223547" font-weight="700" font-size="18"><text x="134" y="186">Check grant</text><text x="134" y="207">+ fresh page</text><text x="357" y="186">Record</text><text x="357" y="207">write intent</text><text x="567" y="186">Attempt</text><text x="567" y="207">one write</text><text x="786" y="186">Read back</text><text x="786" y="207">the result</text></g>
+<path d="M234 194 H263 M448 194 H477 M655 194 H681" stroke="#657789" fill="none" stroke-width="2.4" marker-end="url(#arrow)"/>
+<path d="M786 236 V271 H254 V282 M786 271 H681 V282" stroke="#657789" fill="none" stroke-width="2"/>
+<rect x="38" y="286" width="424" height="90" rx="10" fill="#E9F5F0" stroke="#A6D2C0"/>
+<rect x="483" y="286" width="399" height="90" rx="10" fill="#F5ECE8" stroke="#DCC5B5"/>
+<text x="58" y="313" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="16" fill="#386556">CONFIRMED BY READBACK</text>
+<text x="58" y="343" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="22" fill="#16765B">Commit; never repeat</text>
+<text x="503" y="313" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="16" fill="#815847">OUTCOME UNKNOWN</text>
+<text x="503" y="343" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="22" fill="#83523D">Stop; verify manually</text>
+<text x="38" y="399" font-family="Arial,Helvetica,sans-serif" font-size="15" fill="#64748B">The public repository enforces these decisions. A separate browser driver performs the external write.</text>
+</svg>
