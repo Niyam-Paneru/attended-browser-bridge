@@ -1,12 +1,12 @@
 # Attended Browser Bridge
 
-You click **Submit**. The page freezes.
+A browser agent clicks **Submit**. The page freezes. The server might have received the request; the agent hasn't got a clue.
 
-Did the request go through? Maybe. Should you click again? That's how you end up with the same form submitted twice.
+The tempting fix is to click again. That's how one application becomes two, and your retry strategy introduces itself to the hiring manager.
 
-This is a JavaScript **write-control core** for an attended browser agent. It handles the uncomfortable space between “we tried” and “we know what happened.” It does **not** include a browser driver.
+I built this JavaScript **write-control core** for the awkward moment *after* a click: what was allowed, what may have happened, and what we can actually prove. It's not a Chrome driver.
 
-## When a retry is safe — and when it isn't
+## The least glamorous part of clicking a button
 
 | Situation | Decision | Why |
 | --- | --- | --- |
@@ -28,4 +28,4 @@ Node.js 20+; no browser session required to exercise the core. The [verification
 
 It cannot click a website, inspect real Chrome cookies, or prove that an external server completed an action. There's no Chrome transport, Kaggle connection, session credential, or deployment in this public repository. A caller must supply the browser integration and a trustworthy external readback.
 
-If the caller can't establish what happened, the correct output is **manual verification required**. That's less convenient than retrying, but safer than submitting the same application twice. [Security boundary](SECURITY.md) · [provenance](PROVENANCE.md).
+If the caller can't establish what happened, the correct output is **manual verification required**. The next click can wait until we know what the first one did. [Security boundary](SECURITY.md) · [provenance](PROVENANCE.md).
