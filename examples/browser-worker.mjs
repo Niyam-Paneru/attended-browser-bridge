@@ -86,8 +86,8 @@ try {
   if (fault === "stale") await page.getByRole("button", { name: "Change form revision" }).click();
   if (fault === "expired") grant.expiresAt = Date.now() - 1;
   if (fault === "wrong-origin") grant.origins = ["http://127.0.0.1:1"];
-  if (fault === "expiry-at-dispatch") grant.expiresAt = Date.now() + 300;
   const current = await capture();
+  if (fault === "expiry-at-dispatch") grant.expiresAt = Date.now() + 500;
   request = { origin, action: "submit", target: `support-ticket:${ticketId}`, value: summary, grant,
     snapshot, minRevision: current.revision, maxSnapshotAgeMs: 15_000 };
   result.current = current;

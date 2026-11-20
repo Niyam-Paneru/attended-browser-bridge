@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, readdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, readdirSync, writeFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DurableEffectLedger } from "../src/durable-ledger.js";
@@ -38,6 +38,20 @@ test("truncated terminal record cannot be mistaken for success or a new write", 
   const f = fixture(t); f.ledger.recordIntent("effect"); f.ledger.recordDispatch("effect");
   writeFileSync(join(f.dir, readdirSync(f.dir)[0], "resolution.json"), "{");
   assert.throws(() => f.reopen().status("effect"), SyntaxError);
+});
+test("interrupted directory reservation remains ambiguous even without intent bytes", t => {
+  const f = fixture(t); f.ledger.recordIntent("effect");
+  unlinkSync(join(f.dir, readdirSync(f.dir)[0], "intent.json"));
+  assert.equal(f.reopen().status("effect"), "ambiguous");
+  assert.throws(() => f.reopen().recordDispatch("effect"), /dispatch_without_intent/);
+  assert.throws(() => f.reopen().recordIntent("effect"), /intent_not_new/);
+});
+test("corrupt acknowledgement cannot silently resolve or permit a new intent", t => {
+  const f = fixture(t); f.ledger.recordIntent("effect"); f.ledger.recordDispatch("effect");
+  writeFileSync(join(f.dir, readdirSync(f.dir)[0], "ack.json"), "{");
+  assert.throws(() => f.reopen().status("effect"), SyntaxError);
+  assert.throws(() => f.reopen().recordCommit("effect"), SyntaxError);
+  assert.throws(() => f.reopen().recordIntent("effect"), /intent_not_new/);
 });
 test("public bridge gracefully denies a competing reservation", t => {
   const f = fixture(t), origin = "http://127.0.0.1:1", now = Date.now();

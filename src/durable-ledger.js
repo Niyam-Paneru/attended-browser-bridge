@@ -43,12 +43,15 @@ export class DurableEffectLedger {
   status(fingerprint) {
     const directory = this.#path(fingerprint);
     if (!existsSync(directory)) return "new";
+    const intent = this.#read(directory, "intent.json", fingerprint);
+    const dispatch = this.#read(directory, "dispatch.json", fingerprint);
+    const ack = this.#read(directory, "ack.json", fingerprint);
     const resolution = this.#read(directory, "resolution.json", fingerprint);
+    if (intent && intent.kind !== "effect_intent") throw new Error("invalid_intent");
+    if (dispatch && (!intent || dispatch.kind !== "dispatch_boundary")) throw new Error("invalid_dispatch");
+    if (ack && (!dispatch || ack.kind !== "response_observed" || !Number.isInteger(ack.httpStatus) || ack.httpStatus < 100 || ack.httpStatus > 599)) throw new Error("invalid_ack");
     if (!resolution) return "ambiguous";
-    if (this.#read(directory, "intent.json", fingerprint)?.kind !== "effect_intent" ||
-        this.#read(directory, "dispatch.json", fingerprint)?.kind !== "dispatch_boundary") {
-      throw new Error("journal_resolution_without_dispatch");
-    }
+    if (!dispatch) throw new Error("journal_resolution_without_dispatch");
     if (resolution.kind === "effect_commit") return "committed";
     if (resolution.kind === "effect_reject") return "rejected";
     throw new Error("invalid_resolution");
