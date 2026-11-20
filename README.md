@@ -6,6 +6,8 @@ If you click again and it *did* go through, congratulations: you've discovered d
 
 I built this JavaScript control core for that awkward gap between **“we tried”** and **“we know what happened.”** The exciting part is knowing when *not* to press the button. It isn't a browser driver.
 
+![The lifecycle of one attended browser write: authorize, record intent, attempt once, and verify; unknown outcomes stop without a retry](docs/one-write.svg)
+
 ## The one-write rule (the button gets one turn)
 
 | Situation | Decision | Why |
