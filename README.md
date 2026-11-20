@@ -1,25 +1,31 @@
 # Attended Browser Bridge
 
-You click **Submit**. The page freezes. Did the request go through?
+You click **Submit**. The page freezes.
 
-If you click again and it *did* go through, congratulations: you've discovered duplicates.
+Did the request go through? Maybe. Should you click again? That's how you end up with two bookings, three applications, or a very confused database.
 
-I built this JavaScript control core for that awkward gap between **"we tried"** and **"we know what happened."** It's the decision-making part of attended browser writes, not the browser driver.
+This is a JavaScript **write-control core** for an attended browser agent. It handles the uncomfortable space between “we tried” and “we know what happened.” It does **not** include a browser driver.
 
-![Browser-write lifecycle: check permission and freshness, reserve intent, attempt once, then either commit confirmed results or stop when the outcome is unknown](docs/one-write.svg)
+## The world's least exciting retry policy
 
-## What the picture leaves out
+| Situation | Decision | Why |
+| --- | --- | --- |
+| Wrong origin/action, expired grant, or stale page snapshot | **Stop** | Permission for one page isn't permission for its surprise replacement. |
+| Already-confirmed effect | **Block duplicate** | Once is quite enough. |
+| Write was attempted but the result is unknown | **Leave unresolved; block retry** | The page freezing isn't proof the server did nothing. |
+| Fresh grant and snapshot, no prior effect | **Record intent; allow one attempt** | The intention exists before the external write. |
+| External result independently verified | **Commit that effect** | “Done” needs a readback, not a motivational speech. |
 
-The permission grant must cover the **origin and action** and still be valid. The page snapshot must also match the expected origin, revision, age, and digest. An already committed effect is never written a second time.
+An effect fingerprint and journal distinguish a new request from a duplicate or uncertain prior attempt. A successful authorization check does **not** erase an unresolved write.
 
-A new effect records an intent before the outside browser driver is allowed one attempt. Only a verified readback can mark that effect committed. No reliable readback? The intent remains unresolved and the retry stays blocked.
+## Where the boundaries live
 
-Node.js 20+, no browser session needed. [Verification steps](docs/verification.md) are kept out of this front page.
+Start with [bridge.js](src/bridge.js), then [policy.js](src/policy.js), [snapshot.js](src/snapshot.js), and [ledger.js](src/ledger.js). The code requires the grant's origin and action to match; page freshness checks include revision, age, and digest.
 
-If you're reading the source, follow [`src/bridge.js`](src/bridge.js) → [`src/policy.js`](src/policy.js) → [`src/snapshot.js`](src/snapshot.js) → [`src/ledger.js`](src/ledger.js). The tests cover grants, snapshot freshness, effect fingerprints, and replay decisions. There's a more detailed [write-state table](docs/write-state-table.md) and a [timeout walkthrough](docs/walkthrough.md).
+Node.js 20+; no browser session required to exercise the core. The [verification steps](docs/verification.md), [write-state table](docs/write-state-table.md), and [timeout walkthrough](docs/walkthrough.md) cover permitted writes and blocked replays.
 
-## Not a magic browser
+## What this repo cannot do
 
-This repository doesn't click websites. No Chrome transport, cookies, session secrets, or Kaggle connection are included. The caller still has to integrate the real browser, perform at most the permitted write, and check the external result.
+It cannot click a website, inspect real Chrome cookies, or prove that an external server completed an action. There's no Chrome transport, Kaggle connection, session credential, or deployment in this public repository. A caller must supply the browser integration and a trustworthy external readback.
 
-I prefer a boring "manual verification required" to a very exciting duplicate form submission. See [SECURITY.md](SECURITY.md) and [PROVENANCE.md](PROVENANCE.md) for the boundary.
+If the caller can't establish what happened, the correct output is **manual verification required**. Not as satisfying as a green checkmark, but considerably cheaper than accidentally applying for the same job twice. [Security boundary](SECURITY.md) · [provenance](PROVENANCE.md).
