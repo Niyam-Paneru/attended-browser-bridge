@@ -8,6 +8,7 @@ export class EffectLedger {
   status(fingerprint) {
     const rows = this.#rows.filter((row) => row.fingerprint === fingerprint);
     if (rows.some((row) => row.kind === "effect_commit")) return "committed";
+    if (rows.some((row) => row.kind === "effect_reject")) return "rejected";
     if (rows.some((row) => row.kind === "effect_intent")) return "ambiguous";
     return "new";
   }
@@ -24,5 +25,10 @@ export class EffectLedger {
       throw new Error("commit_without_intent");
     }
     this.#rows.push({ kind: "effect_commit", fingerprint });
+  }
+
+  recordReject(fingerprint) {
+    if (this.status(fingerprint) !== "ambiguous") throw new Error("reject_without_intent");
+    this.#rows.push({ kind: "effect_reject", fingerprint });
   }
 }

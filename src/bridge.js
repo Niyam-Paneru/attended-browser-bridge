@@ -38,6 +38,9 @@ export class BrowserBridge {
     if (status === "committed") {
       return { ok: true, stage: "already_committed", fingerprint: effect };
     }
+    if (status === "rejected") {
+      return { ok: false, stage: "already_rejected", fingerprint: effect };
+    }
     if (status === "ambiguous") {
       return {
         ok: false,
@@ -47,7 +50,13 @@ export class BrowserBridge {
       };
     }
 
-    this.ledger.recordIntent(effect);
+    try {
+      this.ledger.recordIntent(effect);
+    } catch (error) {
+      // A durable ledger may have reserved the same effect in another executor.
+      if (error?.message !== "intent_not_new") throw error;
+      return { ok: false, stage: "ambiguous", reason: "manual_verification_required", fingerprint: effect };
+    }
     return {
       ok: true,
       stage: "ready_for_single_write",
@@ -65,5 +74,10 @@ export class BrowserBridge {
   commit(effectFingerprint) {
     this.ledger.recordCommit(effectFingerprint);
     return { ok: true, stage: "committed", fingerprint: effectFingerprint };
+  }
+
+  reject(effectFingerprint) {
+    this.ledger.recordReject(effectFingerprint);
+    return { ok: false, stage: "rejected", fingerprint: effectFingerprint };
   }
 }
