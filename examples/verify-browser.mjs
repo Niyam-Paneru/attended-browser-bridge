@@ -70,6 +70,7 @@ try {
 
   const lost = await execute("lost", { mode: "drop-after", crash: true });
   assert.ok(lost.network.failure); assert.equal(lost.network.response, undefined); assert.equal(lost.readback, null); assert.equal(lost.final, "ambiguous");
+  assert.ok(lost.relay.failure, "the real one-shot upstream request must fail");
   assert.deepEqual(phases(lost), ["effect_intent", "dispatch_boundary"]);
   assert.ok(stats("case-lost").events.some(e => e.event === "response_dropped_after_save"));
   pass("lost response + interrupted process", { ...counts("lost", 1, 1), explanation: "Chromium reports failure; durable server record exists; executor exits 71 before readback" });
@@ -87,6 +88,7 @@ try {
 
   const absent = await execute("unknown", { mode: "drop-before" });
   assert.ok(absent.network.failure); assert.equal(absent.readback.state, "not_found"); assert.equal(absent.final, "ambiguous");
+  assert.ok(absent.relay.failure);
   const absentReplay = await execute("unknown", { mode: "drop-before" });
   assert.equal(absentReplay.decision, "ambiguous"); assert.equal(absentReplay.final, "ambiguous"); assert.equal(absentReplay.network, null);
   pass("transport failure + absent record", { ...counts("unknown", 1, 0), explanation: "negative lookup stays unresolved; restart does not replay" });

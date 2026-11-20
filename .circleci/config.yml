@@ -37,18 +37,17 @@ jobs:
       - run:
           name: Build and verify the exact review archive in clean folders
           command: |
-            set -eu
+            set -euo pipefail
             mkdir -p /tmp/osmium-review/first /tmp/osmium-review/final /tmp/osmium-review/artifacts
             git rev-parse HEAD > /tmp/osmium-review/revision.txt
-            git archive --format=zip --prefix=attended-browser-proof/ HEAD README.md LICENSE SECURITY.md PROVENANCE.md package.json package-lock.json src test examples docs/browser-demo.svg > /tmp/osmium-review/source.zip
+            git archive --format=zip --prefix=attended-browser-proof/ HEAD README.md LICENSE SECURITY.md PROVENANCE.md package.json package-lock.json src test examples docs/architecture.md docs/native-retry.md > /tmp/osmium-review/source.zip
             python3 -m zipfile -e /tmp/osmium-review/source.zip /tmp/osmium-review/first
             cd /tmp/osmium-review/first/attended-browser-proof
             npm ci
             npx playwright install chromium
-            npm test
-            npm run demo -- browser-evidence.json
             mkdir -p /tmp/osmium-review/first/attended-browser-proof/evidence
-            mv browser-evidence.json evidence/browser-evidence.json
+            npm test | tee evidence/unit-tests.txt
+            npm run demo -- evidence/browser-evidence.json
             cp /tmp/osmium-review/revision.txt SOURCE_REVISION.txt
             # Exclude installed packages; use explicit public source paths only.
             cd /tmp/osmium-review/first

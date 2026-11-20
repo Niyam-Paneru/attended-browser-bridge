@@ -15,7 +15,7 @@ const formUrl = `${origin}/form?mode=${mode}`;
 const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || undefined });
 const page = await browser.newPage();
 page.setDefaultTimeout(5000);
-const result = { ticketId, pid: process.pid, browser: browser.version(), initial: null, permission: null, decision: null, network: null, readback: null, journal: [] };
+const result = { ticketId, pid: process.pid, browser: browser.version(), initial: null, permission: null, decision: null, network: null, relay: null, blockedRepeatedBrowserPosts: 0, readback: null, journal: [] };
 let armed = false, released = false, prepared, request, snapshot;
 const capture = async () => ({ url: page.url(), revision: Number(await page.locator("form").getAttribute("data-revision")),
   action: await page.locator("form").getAttribute("action"), ticketId: await page.getByLabel("Ticket ID").inputValue(), summary: await page.getByLabel("Summary").inputValue() });
@@ -30,7 +30,10 @@ await page.route("**/*", async route => {
   const req = route.request(), url = new URL(req.url());
   if (url.origin !== origin) { await route.abort(); return; }
   if (req.method() === "GET") { await route.continue(); return; }
-  if (req.method() !== "POST" || url.pathname !== "/submit" || url.search || !armed || released) { await route.abort(); return; }
+  if (req.method() !== "POST" || url.pathname !== "/submit" || url.search || !armed || released) {
+    if (req.method() === "POST" && released) result.blockedRepeatedBrowserPosts++;
+    await route.abort(); return;
+  }
   const body = new URLSearchParams(req.postData() ?? "");
   if (body.size !== 4 || body.get("ticketId") !== ticketId || body.get("summary") !== summary || body.get("mode") !== mode || body.get("revision") !== String(snapshot.revision)) {
     await route.abort(); return;
@@ -38,11 +41,23 @@ await page.route("**/*", async route => {
   try {
     policyAtBoundary();
     ledger.recordDispatch(prepared.fingerprint); // fsynced before the browser request is released.
+    policyAtBoundary(); // Disk latency must not silently extend the grant.
   } catch (error) {
     result.network = { failure: error.message }; await route.abort(); return;
   }
   released = true;
-  await route.continue();
+  // Chromium may retry a POST internally after an empty response (observed in testing).
+  // Never release this write into its native retrying transport. Relay the actual
+  // browser-initiated request once, without retry or redirects, then fulfill/abort it.
+  let upstream;
+  try {
+    upstream = await route.fetch({ maxRetries: 0, maxRedirects: 0, timeout: 5000 });
+    result.relay = { response: upstream.status() };
+  } catch (error) {
+    result.relay = { failure: error.name, detail: String(error.message).split("\n")[0] };
+    await route.abort("failed"); return;
+  }
+  await route.fulfill({ response: upstream });
 });
 
 function observeNetwork() {
