@@ -4,28 +4,53 @@ You click **Submit**. The page freezes. Did it go through?
 
 If you click again and it *did* go through, congratulations: you've discovered duplicates.
 
-I built this JavaScript control core for that awkward gap between **“we tried”** and **“we know what happened.”** The exciting part is knowing when *not* to press the button. It isn't a browser driver.
+This public JavaScript control core separates permission, intent, dispatch, response and confirmed business outcome. The included **local Chromium demonstration** wires the actual public core to a synthetic support-ticket form. It is not a redistributable production browser agent or the private Browser Bridge implementation.
 
 ## The one-write rule (the button gets one turn)
 
-| Situation | Decision | Why |
-| --- | --- | --- |
-| Wrong origin/action, expired grant, or stale page snapshot | **Stop** | Permission for one page isn't permission for its surprise replacement. |
-| Already-confirmed effect | **Block duplicate** | The button had its moment. |
-| Write was attempted but the result is unknown | **Leave unresolved; block retry** | The page freezing isn't proof the server did nothing. |
-| Fresh grant and snapshot, no prior effect | **Record intent; allow one attempt** | The intention exists before the external write. |
-| External result independently verified | **Commit that effect** | A readback is stronger than a success message. |
+| Situation | Expected decision | Server POSTs / saved tickets |
+|---|---|---|
+| Valid submit, then a repeated execution | Confirm after exact readback; suppress repeat | 1 / 1 |
+| Explicit server rejection | Record rejection after matching readback, suppress repeat | 1 / 0 |
+| 201 response but readback unavailable | Unresolved until a later matching readback | 1 / 1 |
+| Server saves, connection breaks, executor exits before readback | Unresolved; restart does not submit again | 1 / 1 |
+| Readback 503 or wrong payload, then matching readback | Remain unresolved; eventually confirm | Still 1 / 1 |
+| Response lost before save, lookup returns absent | Remain unresolved; no blind retry | 1 / 0 |
+| Stale form revision, expired grant, wrong origin | Deny before intent | 0 / 0 |
+| Same-origin unexpected navigation, changed revision or expiry after intent | Hold for review, including after restart | 0 / 0 |
 
-An effect fingerprint and journal distinguish a new request from a duplicate or uncertain prior attempt. A successful authorization check does **not** erase an unresolved write.
+The suite defines 14 named scenarios across separate worker processes. It asserts counts from the fixture's fsynced server journal; a response code, an empty readback or a browser failure alone is not confirmation. The first process in the lost-response case exits deliberately with code 71 before reconciliation.
 
-## Where the boundaries live
+[Architecture sketch](docs/architecture.md) · [Why the adapter relays the POST](docs/native-retry.md)
 
-Start with [bridge.js](src/bridge.js), then [policy.js](src/policy.js), [snapshot.js](src/snapshot.js), and [ledger.js](src/ledger.js). The code requires the grant's origin and action to match; page freshness checks include revision, age, and digest.
+## Run the demonstration
 
-Node.js 20+; no browser session required to exercise the core. The [verification steps](docs/verification.md), [write-state table](docs/write-state-table.md), and [timeout walkthrough](docs/walkthrough.md) cover permitted writes and blocked replays.
+Requirements: Node.js 20+, npm, a local filesystem and Chromium with its normal platform dependencies. No account, API key or customer data. In the extracted folder:
 
-## What this repo cannot do
+```sh
+npm ci
+npx playwright install chromium
+npm test
+npm run demo -- browser-evidence.json
+```
 
-It cannot click a website, inspect real Chrome cookies, or prove that an external server completed an action. There's no Chrome transport, Kaggle connection, session credential, or deployment in this public repository. A caller must supply the browser integration and a trustworthy external readback.
+On Linux, install required browser libraries if missing: `npx playwright install --with-deps chromium`. To use a compatible installed browser, set `CHROMIUM_PATH` to its executable (e.g. `CHROMIUM_PATH=/usr/bin/chromium npm run demo -- browser-evidence.json` on Linux; set `$env:CHROMIUM_PATH` in PowerShell). The command exits nonzero if any scenario fails. The test application binds to 127.0.0.1 on an ephemeral port.
 
-If the caller can't establish what happened, the correct output is **manual verification required**. I prefer a boring stop to a very exciting duplicate form submission. [Security boundary](SECURITY.md) · [provenance](PROVENANCE.md).
+`npm test` exercises policy, snapshot, memory and durable ledger. `npm run demo` launches real Chromium and generates JSON containing initial UI state, worker PIDs, decisions, network response/failure, readback, journal phases and server-side counts. The JSON is generated only after all assertions pass. If recorded proof is included in a review archive, it is historical evidence; regenerate it yourself.
+
+Expected successful run: **43 unit tests, 14 Chromium scenarios, 22 worker processes, 5 received POSTs, 3 saved tickets, 1 explicit rejection, 0 duplicate POSTs**. The review archive includes recorded `evidence/unit-tests.txt` and `evidence/browser-evidence.json` plus its public source revision.
+
+## Boundaries
+
+- [Core](src/bridge.js): expiring origin/action grant, snapshot revision/age, stable effect fingerprint, intent and replay decision. `commit()` and `reject()` trust the caller's verification.
+- [Durable journal](src/durable-ledger.js): exclusive reservations and fsynced records designed to survive executor restarts; unfinished reservation blocks replay; acknowledgment is separate from resolution.
+- [Fixture adapter](examples/browser-worker.mjs): Playwright opens and fills the actual local form, rechecks permission and page state, intercepts its native form POST, relays it once with retries and redirects disabled, and reads the business record separately. Chromium's own network stack is deliberately not allowed to dispatch this write; an earlier real run produced a hidden repeat after a dropped response. [Observed failure and repair](docs/native-retry.md).
+- [Test site](examples/ticket-site.mjs): synthetic HTTP application with a persisted event log and deliberate response faults. [Runner](examples/verify-browser.mjs) launches fresh processes and checks server counters.
+
+No actual customer session, production site, generic agent, private source, credential or session material is provided. The grant is a synthetic operator permission, not a real approval UI. Snapshot digests are deterministic integrity checks, not signatures. The fixture trusts its local readback and workspace; it targets executor restarts, not power loss, concurrent deployment, or recovery after journal deletion. Effect identity includes the submitted value; changing a payload can create a different fingerprint. A real integration needs scoped permissions, page identity, a stable business key and business-level duplicate rules, trustworthy readback and a product-specific security review. Windows/macOS execution is not claimed unless separately tested.
+
+## What a commercial implementation would provide
+
+For one agreed workflow (such as ticket intake), a supported integration could include the site-specific adapter, configuration and grant scope, effect journal and readback contract, reproducible acceptance tests, a runbook for unresolved states and agreed bounded defect support. Scope and support terms would be agreed separately. The MIT core stays public; this preliminary example is not a customer deployment or commercial commitment.
+
+[Security boundary](SECURITY.md) · [Source provenance](PROVENANCE.md) · [Public repository](https://github.com/Niyam-Paneru/attended-browser-bridge)

@@ -7,7 +7,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "demo": "node examples/verify-browser.mjs"
   },
   "license": "MIT",
   "description": "Policy and effect-state core for attended browser writes: fresh snapshots, expiring grants, and no blind replay.",
@@ -22,5 +23,6 @@
     "type": "git",
     "url": "git+https://github.com/Niyam-Paneru/attended-browser-bridge.git"
   },
-  "homepage": "https://github.com/Niyam-Paneru/attended-browser-bridge#readme"
+  "homepage": "https://github.com/Niyam-Paneru/attended-browser-bridge#readme",
+  "devDependencies": { "playwright": "1.62.1" }
 }

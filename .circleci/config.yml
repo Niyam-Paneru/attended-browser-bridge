@@ -28,7 +28,57 @@ jobs:
             test -s SECURITY.md
             test -s PROVENANCE.md
 
+  verify-browser-review:
+    docker:
+      - image: mcr.microsoft.com/playwright:v1.62.1-noble
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: Build and verify the exact review archive in clean folders
+          command: |
+            set -euo pipefail
+            mkdir -p /tmp/osmium-review/first /tmp/osmium-review/final /tmp/osmium-review/artifacts
+            git rev-parse HEAD > /tmp/osmium-review/revision.txt
+            git archive --format=zip --prefix=attended-browser-proof/ HEAD README.md LICENSE SECURITY.md PROVENANCE.md package.json package-lock.json src test examples docs/architecture.md docs/native-retry.md > /tmp/osmium-review/source.zip
+            python3 -m zipfile -e /tmp/osmium-review/source.zip /tmp/osmium-review/first
+            cd /tmp/osmium-review/first/attended-browser-proof
+            npm ci
+            npx playwright install chromium
+            mkdir -p /tmp/osmium-review/first/attended-browser-proof/evidence
+            npm test | tee evidence/unit-tests.txt
+            npm run demo -- evidence/browser-evidence.json
+            cp /tmp/osmium-review/revision.txt SOURCE_REVISION.txt
+            # Exclude installed packages; use explicit public source paths only.
+            cd /tmp/osmium-review/first
+            python3 - <<'PY'
+            import pathlib, zipfile
+            root = pathlib.Path('attended-browser-proof')
+            target = '/tmp/osmium-review/artifacts/Attended_Browser_Bridge_Chromium_Proof_2026-11-20.zip'
+            with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as out:
+                for path in sorted(root.rglob('*')):
+                    if path.is_file() and 'node_modules' not in path.parts:
+                        out.write(path, path.as_posix())
+            PY
+            python3 -m zipfile -e /tmp/osmium-review/artifacts/Attended_Browser_Bridge_Chromium_Proof_2026-11-20.zip /tmp/osmium-review/final
+            cd /tmp/osmium-review/final/attended-browser-proof
+            npm ci
+            npx playwright install chromium
+            npm test
+            npm run demo -- /tmp/osmium-review/artifacts/final-extracted-browser-evidence.json
+            sha256sum /tmp/osmium-review/artifacts/Attended_Browser_Bridge_Chromium_Proof_2026-11-20.zip | tee /tmp/osmium-review/artifacts/SHA256.txt
+          no_output_timeout: 8m
+      - store_artifacts:
+          path: /tmp/osmium-review/artifacts
+
 workflows:
   public-proof:
     jobs:
-      - verify
+      - verify:
+          filters:
+            branches:
+              ignore: osmium/real-browser-recovery
+      - verify-browser-review:
+          filters:
+            branches:
+              only: osmium/real-browser-recovery
